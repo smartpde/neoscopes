@@ -27,11 +27,11 @@ extension hooks for your custom logic.
 ## Installation
 
 ```lua
-  -- Optionally, install telescope for nicer scope selection UI.
-  use {"nvim-telescope/telescope.nvim"}
+-- Optionally, install telescope for nicer scope selection UI.
+use {"nvim-telescope/telescope.nvim"}
 
-  -- Install neoscopes.
-  use {"smartpde/neoscopes"}
+-- Install neoscopes.
+use {"smartpde/neoscopes"}
 ```
 
 ## Registering scopes
@@ -42,20 +42,20 @@ as relative paths (e.g. for directories in a monorepo).
 Registering scopes for different project directories:
 
 ```lua
-  local scopes = require("neoscopes")
-  scopes.add({
-    name = "project 1",
-    dirs = {
-      "~/projects/project1",
-      "/tmp/out/project1",
-    },
-  })
-  scopes.add({
-    name = "project 2",
-    dirs = {
-      "~/projects/project2",
-    },
-  })
+local scopes = require("neoscopes")
+scopes.add({
+  name = "project 1",
+  dirs = {
+    "~/projects/project1",
+    "/tmp/out/project1",
+  },
+})
+scopes.add({
+  name = "project 2",
+  dirs = {
+    "~/projects/project2",
+  },
+})
 ```
 
 Registering directories of a large monorepo. You can register relative paths
@@ -63,25 +63,25 @@ as scope directories, and then set the current directory in neovim to the repo
 root.
 
 ```lua
-  local scopes = require("neoscopes")
-  -- Let's say you are working on the networking area in the project.
-  scopes.add({
-    name = "networking",
-    dirs = {
-      -- Relative directories in the repo.
-      "src/net",
-      "src/http",
-    },
-  })
-  -- And sometimes you also like doing some UI changes.
-  scopes.add({
-    name = "ui",
-    dirs = {
-      -- Relative directories in the repo.
-      "ui/web",
-      "ui/desktop",
-    },
-  })
+local scopes = require("neoscopes")
+-- Let's say you are working on the networking area in the project.
+scopes.add({
+  name = "networking",
+  dirs = {
+    -- Relative directories in the repo.
+    "src/net",
+    "src/http",
+  },
+})
+-- And sometimes you also like doing some UI changes.
+scopes.add({
+  name = "ui",
+  dirs = {
+    -- Relative directories in the repo.
+    "ui/web",
+    "ui/desktop",
+  },
+})
 ```
 
 ## Selecting scopes
@@ -93,20 +93,20 @@ be done by calling `require("neoscopes").select()` to select with the UI, or
 Mapping example:
 
 ```lua
-  -- Select the current scope with telescope (if installed) or native UI
-  -- otherwise.
-  vim.api.nvim_set_keymap("n", "<Leader>fs",
-    [[<cmd>lua require("neoscopes").select()<CR>]], {noremap = true})
+-- Select the current scope with telescope (if installed) or native UI
+-- otherwise.
+vim.api.nvim_set_keymap("n", "<Leader>fs",
+  [[<cmd>lua require("neoscopes").select()<CR>]], {noremap = true})
 ```
 
 Config example:
 
 ```lua
-  -- This can be done in e.g. init.lua, or in a project-specific config file.
-  local scopes = require("neoscopes")
-  -- ... register scopes
-  -- Then select the desired one.
-  scopes.set_current("project_1")
+-- This can be done in e.g. init.lua, or in a project-specific config file.
+local scopes = require("neoscopes")
+-- ... register scopes
+-- Then select the desired one.
+scopes.set_current("project_1")
 ```
 
 ## Scope selection callback
@@ -119,15 +119,15 @@ directory, etc.
 Example:
 
 ```lua
-  local scopes = require("neoscopes")
-  scopes.add({
-    name = "My git project",
-    dirs = {"~/projects/git_project"},
-    on_select = function()
-      -- Change the current dir in neovim.
-      -- Run `git pull`, etc.
-    end
-  })
+local scopes = require("neoscopes")
+scopes.add({
+  name = "My git project",
+  dirs = {"~/projects/git_project"},
+  on_select = function()
+    -- Change the current dir in neovim.
+    -- Run `git pull`, etc.
+  end
+})
 ```
 
 
@@ -138,13 +138,13 @@ directory with neovim's config files so that they are always at hand. This can
 be done by using the `add_dirs_to_all_scopes(dirs)` function.
 
 ```lua
-  local scopes = require("neoscopes")
-  -- ... register scopes
-  -- These directories will be present in all scopes, both current and future.
-  scopes.add_dirs_to_all_scopes({
-    "~/dots",
-    "~/Downloads"
-  })
+local scopes = require("neoscopes")
+-- ... register scopes
+-- These directories will be present in all scopes, both current and future.
+scopes.add_dirs_to_all_scopes({
+  "~/dots",
+  "~/Downloads"
+})
 ```
 
 ## Telescope integration
@@ -155,24 +155,24 @@ Let's say that you want to limit the Telescopes's `live_grep` and `find_files`
 to the current scope:
 
 ```lua
-  local scopes = require("neoscopes")
+local scopes = require("neoscopes")
 
-  -- Helper functions to fetch the current scope and set `search_dirs`
-  _G.find_files = function()
-    require('telescope.builtin').find_files({
-      search_dirs = scopes.get_current_dirs()
-    })
-  end
-  _G.live_grep = function()
-    require('telescope.builtin').live_grep({
-      search_dirs = scopes.get_current_dirs()
-    })
-  end
+-- Helper functions to fetch the current scope and set `search_dirs`
+_G.find_files = function()
+  require('telescope.builtin').find_files({
+    search_dirs = scopes.get_current_dirs()
+  })
+end
+_G.live_grep = function()
+  require('telescope.builtin').live_grep({
+    search_dirs = scopes.get_current_dirs()
+  })
+end
 
-  vim.api.nvim_set_keymap("n", "<Leader>ff", ":lua find_files()<CR>",
-    {noremap = true})
-  vim.api.nvim_set_keymap("n", "<Leader>fg", ":lua live_grep()<CR>",
-    {noremap = true})
+vim.api.nvim_set_keymap("n", "<Leader>ff", ":lua find_files()<CR>",
+  {noremap = true})
+vim.api.nvim_set_keymap("n", "<Leader>fg", ":lua live_grep()<CR>",
+  {noremap = true})
 ```
 
 ## Startup scope
@@ -187,8 +187,8 @@ contain the current directory. This covers the case when you first `cd` into the
 directory and the run neovim from there.
 
 ```lua
-  local scopes = require("neoscopes")
-  -- The startup scope must be added explicitly, if needed.
-  scopes.add_startup_scope()
+local scopes = require("neoscopes")
+-- The startup scope must be added explicitly, if needed.
+scopes.add_startup_scope()
 ```
 
