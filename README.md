@@ -1,6 +1,6 @@
 # neoscopes
 
-A lightweight plugin for simple project management or getting around in large
+A lightweight Neovim plugin for simple project management or getting around in large
 monorepos.
 
 ## Concept
