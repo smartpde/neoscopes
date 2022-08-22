@@ -6,6 +6,11 @@ local M = {}
 ---@field public dirs string[] required, the list of directories for this scope, could be absolute or relative.
 ---@field public on_select function optional, called when the scope is selected, either programmatically or using the UI.
 local Scope = {}
+---@class Config
+---@field public scopes Scope[] the scopes to register.
+---@field public add_dirs_to_all_scopes string[] the list of directories to include into all scopes.
+---@field public current_scope string the current scope to select.
+local Config = {}
 
 local scopes = {}
 local current_scope
@@ -17,6 +22,26 @@ local function stat(filename)
     return nil
   end
   return s.type
+end
+
+---Sets up the plugin. The scopes could be registered either in the setup function or also
+---with the `add(scope)` separately.
+---@param config Config the configuration object
+M.setup = function(config)
+  if not config then
+    return
+  end
+  if config.scopes then
+    for _, scope in ipairs(config.scopes) do
+      M.add(scope)
+    end
+  end
+  if config.add_dirs_to_all_scopes then
+    M.add_dirs_to_all_scopes(config.add_dirs_to_all_scopes)
+  end
+  if config.current_scope then
+    M.set_current(config.current_scope)
+  end
 end
 
 ---Registers the scope. If the scope with the same name already exists, it will

@@ -42,6 +42,28 @@ as relative paths (e.g. for directories in a monorepo).
 Registering scopes for different project directories:
 
 ```lua
+require("neoscopes").setup(
+  scopes = {
+    {
+      name = "project 1",
+      dirs = {
+        "~/projects/project1",
+        "/tmp/out/project1",
+      }
+    },
+    {
+      name = "project 2",
+      dirs = {
+        "~/projects/project2",
+      },
+    }
+  }
+)
+```
+
+The scopes can also be added separately:
+
+```lua
 local scopes = require("neoscopes")
 scopes.add({
   name = "project 1",
@@ -130,7 +152,6 @@ scopes.add({
 })
 ```
 
-
 ## Adding directories to all scopes
 
 It's often useful to add certain directories to all registered scopes, e.g. the
@@ -138,8 +159,22 @@ directory with neovim's config files so that they are always at hand. This can
 be done by using the `add_dirs_to_all_scopes(dirs)` function.
 
 ```lua
+require("neoscopes").setup({
+  -- register some scopes ...
+  scopes = {},
+  -- These directories will be present in all scopes, both current and future.
+  add_dirs_to_all_scopes = {
+    "~/dots",
+    "~/Downloads"
+  }
+})
+```
+
+The same can also be done using the separate function:
+
+```lua
 local scopes = require("neoscopes")
--- ... register scopes
+-- ... register some scopes
 -- These directories will be present in all scopes, both current and future.
 scopes.add_dirs_to_all_scopes({
   "~/dots",
