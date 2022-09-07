@@ -1,4 +1,3 @@
-local utils = require "utils"
 local M = {}
 
 ---@class Scope
@@ -22,6 +21,16 @@ local function stat(filename)
     return nil
   end
   return s.type
+end
+
+local function dirname(filepath)
+  local is_win = vim.loop.os_uname().sysname == "Windows"
+  local path_sep = is_win and "\\" or "/"
+  local result = filepath:gsub(path_sep .. "([^" .. path_sep .. "]+)$",
+                   function()
+      return ""
+    end)
+  return result
 end
 
 ---Sets up the plugin. The scopes could be registered either in the setup function or also
@@ -67,12 +76,12 @@ M.add_startup_scope = function()
   local dirs = {}
   for i, arg in ipairs(vim.v.argv) do
     -- Skip program name and ignore known argmuments like -u
-    if i > 1 and vim.v.argv[i-1] ~= "-u" then
+    if i > 1 and vim.v.argv[i - 1] ~= "-u" then
       local s = stat(arg)
       if s == "directory" then
         table.insert(dirs, arg)
       elseif s == "file" then
-        table.insert(dirs, utils.dirname(arg))
+        table.insert(dirs, dirname(arg))
       end
     end
   end
@@ -114,7 +123,8 @@ end
 ---@return string[] the list of directories for the current scope
 M.get_current_dirs = function()
   if current_scope == nil then
-    error("Current scope not set, call set_current(scope_name) or select() first")
+    error(
+      "Current scope not set, call set_current(scope_name) or select() first")
   end
   return current_scope.dirs
 end
@@ -139,7 +149,7 @@ local function select_with_telescope()
           value = scope.name,
           ordinal = scope.name,
           display = scope.name,
-          scope = scope,
+          scope = scope
         }
       end
     },
@@ -147,7 +157,8 @@ local function select_with_telescope()
     previewer = previewers.new_buffer_previewer {
       title = "Directories",
       define_preview = function(self, entry)
-        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, entry.scope.dirs)
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false,
+          entry.scope.dirs)
       end
     },
     attach_mappings = function(prompt_bufnr)
@@ -192,4 +203,3 @@ M.clear = function()
 end
 
 return M
-
