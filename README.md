@@ -42,7 +42,7 @@ as relative paths (e.g. for directories in a monorepo).
 Registering scopes for different project directories:
 
 ```lua
-require("neoscopes").setup(
+require("neoscopes").setup({
   scopes = {
     {
       name = "project 1",
@@ -58,7 +58,7 @@ require("neoscopes").setup(
       },
     }
   }
-)
+})
 ```
 
 The scopes can also be added separately:
@@ -214,7 +214,7 @@ vim.api.nvim_set_keymap("n", "<Leader>fg", ":lua live_grep()<CR>",
 
 The startup scope is the special scope which encompasses the directory of the
 file you open directly with neovim. Let's say you run
-`neovim /tmp/logs/test.log`. It's often helpful to have /tmp/logs automatically
+`nvim /tmp/logs/test.log`. It's often helpful to have /tmp/logs automatically
 in scope for looking around. The startup scope does that.
 
 If neovim is launched without file/directory arguments, the startup scope will
