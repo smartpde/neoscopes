@@ -23,16 +23,6 @@ local function stat(filename)
   return s.type
 end
 
-local function dirname(filepath)
-  local is_win = vim.loop.os_uname().sysname == "Windows"
-  local path_sep = is_win and "\\" or "/"
-  local result = filepath:gsub(path_sep .. "([^" .. path_sep .. "]+)$",
-                   function()
-      return ""
-    end)
-  return result
-end
-
 ---Sets up the plugin. The scopes could be registered either in the setup function or also
 ---with the `add(scope)` separately.
 ---@param config Config the configuration object
@@ -76,12 +66,13 @@ M.add_startup_scope = function()
   local dirs = {}
   for i, arg in ipairs(vim.v.argv) do
     -- Skip program name and ignore known argmuments like -u
-    if i > 1 and vim.v.argv[i - 1] ~= "-u" then
+    if i > 1 and vim.v.argv[i - 1] ~= "-u" and arg:sub(1, 1) ~= "-" then
       local s = stat(arg)
       if s == "directory" then
         table.insert(dirs, arg)
       elseif s == "file" then
-        table.insert(dirs, dirname(arg))
+        local dir = vim.fn.fnamemodify(arg, ":h")
+        table.insert(dirs, dir)
       end
     end
   end
