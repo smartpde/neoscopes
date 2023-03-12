@@ -80,6 +80,20 @@ scopes.add({
 })
 ```
 
+The scopes can also be constrained to very specific files (instead of directories):
+```lua
+local scopes = require("neoscopes")
+scopes.add({
+  name = "specific file set 1",
+  dirs = {
+  },
+  files = {
+      '/path/to/file.txt',
+      './path/to/other/file.txt'
+    }
+})
+```
+
 Registering directories of a large monorepo. You can register relative paths
 as scope directories, and then set the current directory in neovim to the repo
 root.
@@ -181,6 +195,29 @@ scopes.add_dirs_to_all_scopes({
   "~/Downloads"
 })
 ```
+
+## Predefined scopes from `npm` workspaces 
+neoscopes supports automatically defining scopes for npm projects that have multiple workspaces defined. When enabled, this will result in one workspace getting created for each npm workspace defined within the project's package.json file. 
+
+npm defined scopes can be enabled by passing the following setup configuration parameter
+```lua
+require("neoscopes").setup({
+  enable_scopes_from_npm = true
+})
+```
+
+## Predefined scopes from `git` differences 
+neoscopes supports defining scopes on files that differ between the current project's source-controlled files and other defined branches. Each configured branch will result in its own scope. 
+```lua
+require("neoscopes").setup({
+  diff_branches_for_scopes = {"main", "origin/main" } 
+})
+```
+
+
+## Project level configuration
+By default, neoscopes will look for a file named `neoscopes.config.json` in the current working directory. If this file exists, the following configuration keys will be respected by the setup routine `enable_scopes_from_npm`, `scopes`, `diff_branches_for_scopes`, `add_dirs_to_all_scopes`. This provides a mechanism by which to define project specific neoscope settings without cluttering your neovim configuration.
+
 
 ## Telescope integration
 

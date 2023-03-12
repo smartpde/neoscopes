@@ -3,12 +3,17 @@ local M = {}
 ---@class Scope
 ---@field public name string required, the scope name which identifies it uniquely.
 ---@field public dirs string[] required, the list of directories for this scope, could be absolute or relative.
+---@field public files string[] required, the list of files for this scope, could be absolute or relative.
+---@field public origin string optional, identifies the origin from which the scope was defined IE: "git" - diff with a git branch or "npm" - an npm workspace
 ---@field public on_select function optional, called when the scope is selected, either programmatically or using the UI.
 local Scope = {}
 ---@class Config
 ---@field public scopes Scope[] the scopes to register.
 ---@field public add_dirs_to_all_scopes string[] the list of directories to include into all scopes.
 ---@field public current_scope string the current scope to select.
+---@field public enable_scopes_from_npm boolean whether or not to load scopes from ./package.json workspaces
+---@field public diff_branches_for_scopes string[] list of branch names to diff for git-diff scope definitions
+---@field public neoscopes_config_filename string the name of the file that defines neoscopes configuration at a project-level
 local Config = {}
 
 local scopes = {}
@@ -23,6 +28,75 @@ local function stat(filename)
   return s.type
 end
 
+local function get_scopes_from_package_json(name_prefix)
+  if name_prefix == nil then
+    name_prefix = "npm:"
+  end
+  local scope_list = {}
+  if stat("package.json") ~= nil then
+    local tab = vim.fn.json_decode(vim.fn.readfile("package.json"))
+    if tab.workspaces ~= nil and tab.workspaces.packages ~= nil then
+      local pkg_globs = tab.workspaces.packages
+      for _, pkg_glob in pairs(pkg_globs) do
+        for _, filename in ipairs(vim.fn.glob(pkg_glob .. "/package.json", true,
+                                    true)) do
+          filename = filename:gsub("/package.json$", "")
+          table.insert(scope_list, {
+            name = name_prefix .. filename,
+            dirs = {filename},
+            files = {},
+            origin = "npm"
+          })
+        end
+      end
+    end
+  end
+  return scope_list
+end
+
+local function get_scopes_from_git_diffs(branches, name_prefix)
+  if name_prefix == nil then
+    name_prefix = "git:"
+  end
+  local scope_list = {}
+  for _, to in pairs(branches) do
+    local scope = {
+      name = name_prefix .. to,
+      dirs = {},
+      files = {},
+      origin = "git"
+    }
+    local handle = io.popen("git diff --name-only --relative " .. to)
+    if handle ~= nil then
+      local result = handle:read("*a")
+      for line in result:gmatch("[^\r\n]+") do
+        table.insert(scope.files, line)
+      end
+      scope.on_select = function()
+        -- refresh a git scope every time the scope is selected so that the list of
+        -- files that differ are updated in the scope
+        local scopes_from_branch = get_scopes_from_git_diffs({to}, name_prefix)
+        for _, refreshed_scope in ipairs(scopes_from_branch) do
+          M.add(refreshed_scope)
+        end
+      end
+
+      handle:close()
+      table.insert(scope_list, scope)
+    end
+  end
+  return scope_list
+end
+
+---@return Config - a configuration table representing the project level configuration
+local function get_project_level_config(config_filename)
+  if not config_filename or stat(config_filename) == nil then
+    return {}
+  end
+  local tab = vim.fn.json_decode(vim.fn.readfile(config_filename))
+  return tab
+end
+
 ---Sets up the plugin. The scopes could be registered either in the setup function or also
 ---with the `add(scope)` separately.
 ---@param config Config the configuration object
@@ -30,16 +104,47 @@ M.setup = function(config)
   if not config then
     return
   end
+  local project_level_config_filename = config.neoscopes_config_filename or
+                                          'neoscopes.config.json'
+  local project_level_config = get_project_level_config(
+                                 project_level_config_filename)
   if config.scopes then
-    for _, scope in ipairs(config.scopes) do
+    M.add_all(config.scopes)
+  end
+  if project_level_config.scopes then
+    M.add_all(project_level_config.scopes)
+  end
+  if config.enable_scopes_from_npm or
+    project_level_config.enable_scopes_from_npm then
+    local npm_scopes = get_scopes_from_package_json()
+    for _, scope in ipairs(npm_scopes) do
       M.add(scope)
     end
+  end
+  if config.diff_branches_for_scopes then
+    local git_scopes =
+      get_scopes_from_git_diffs(config.diff_branches_for_scopes)
+    M.add_all(git_scopes)
+  end
+  if project_level_config.diff_branches_for_scopes then
+    local git_scopes = get_scopes_from_git_diffs(
+                         project_level_config.diff_branches_for_scopes)
+    M.add_all(git_scopes)
   end
   if config.add_dirs_to_all_scopes then
     M.add_dirs_to_all_scopes(config.add_dirs_to_all_scopes)
   end
   if config.current_scope then
     M.set_current(config.current_scope)
+  end
+end
+
+---Registers a list of scopes. If the scope with the same name already exists, it will
+---be overwritten.
+---@param scopes_to_add Scope[] a list of scope definitions 
+M.add_all = function(scopes_to_add)
+  for _, scope in ipairs(scopes_to_add) do
+    M.add(scope)
   end
 end
 
@@ -51,6 +156,11 @@ M.add = function(scope)
     error("scope.name must be set")
   elseif not scope.dirs or type(scope.dirs) ~= "table" then
     error("scope.dirs must be a table of directory paths")
+  elseif not scope.files then
+    scope.files = {}
+  elseif type(scope.files) ~= "table" then
+    error(
+      "scope.files must be a table of individual files to include in the scope (it is okay to be empty)")
   end
   for _, dir in ipairs(cross_scopes_dirs) do
     table.insert(scope.dirs, dir)
@@ -120,20 +230,30 @@ M.get_current_dirs = function()
   return current_scope.dirs
 end
 
+---Returns the entire, currently selected scope object. If no scope is selected, throws an error.
+---@return Scope the current scope object
+M.get_current_scope = function()
+  if current_scope == nil then
+    error(
+      "Current scope not set, call set_current(scope_name) or select() first")
+  end
+  return current_scope
+end
+
 local function select_with_telescope()
-  local pickers = require "telescope.pickers"
-  local actions = require "telescope.actions"
-  local action_state = require "telescope.actions.state"
-  local previewers = require "telescope.previewers"
-  local finders = require "telescope.finders"
-  local conf = require"telescope.config".values
+  local pickers = require("telescope.pickers")
+  local actions = require("telescope.actions")
+  local action_state = require("telescope.actions.state")
+  local previewers = require("telescope.previewers")
+  local finders = require("telescope.finders")
+  local conf = require("telescope.config").values
   local scope_list = {}
   for _, scope in pairs(scopes) do
     table.insert(scope_list, scope)
   end
   pickers.new({}, {
     prompt_title = "Select scope: ",
-    finder = finders.new_table {
+    finder = finders.new_table({
       results = scope_list,
       entry_maker = function(scope)
         return {
@@ -143,15 +263,15 @@ local function select_with_telescope()
           scope = scope
         }
       end
-    },
+    }),
     sorter = conf.file_sorter({}),
-    previewer = previewers.new_buffer_previewer {
+    previewer = previewers.new_buffer_previewer({
       title = "Directories",
       define_preview = function(self, entry)
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false,
           entry.scope.dirs)
       end
-    },
+    }),
     attach_mappings = function(prompt_bufnr)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
