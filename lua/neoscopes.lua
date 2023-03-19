@@ -77,7 +77,7 @@ local function get_scopes_from_git_diffs(branches, name_prefix)
       scope.on_select = function()
         -- refresh a git scope every time the scope is selected so that the list of
         -- files that differ are updated in the scope
-        local scopes_from_branch = get_scopes_from_git_diffs({ to }, name_prefix)
+        local scopes_from_branch = get_scopes_from_git_diffs({to}, name_prefix)
         for _, refreshed_scope in ipairs(scopes_from_branch) do
           M.add(refreshed_scope)
         end
