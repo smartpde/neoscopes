@@ -14,9 +14,11 @@ local Scope = {}
 ---@field public enable_scopes_from_npm boolean whether or not to load scopes from ./package.json workspaces
 ---@field public diff_branches_for_scopes string[] list of branch names to diff for git-diff scope definitions
 ---@field public neoscopes_config_filename string the name of the file that defines neoscopes configuration at a project-level
+---@field public on_scope_selected - a callback function that takes a scope as an argument and is called when the scope is changed/selected
 local Config = {}
 
 local scopes = {}
+local on_scope_selected = function(scope) end
 local current_scope
 local cross_scopes_dirs = {}
 
@@ -75,7 +77,7 @@ local function get_scopes_from_git_diffs(branches, name_prefix)
       scope.on_select = function()
         -- refresh a git scope every time the scope is selected so that the list of
         -- files that differ are updated in the scope
-        local scopes_from_branch = get_scopes_from_git_diffs({to}, name_prefix)
+        local scopes_from_branch = get_scopes_from_git_diffs({ to }, name_prefix)
         for _, refreshed_scope in ipairs(scopes_from_branch) do
           M.add(refreshed_scope)
         end
@@ -137,11 +139,14 @@ M.setup = function(config)
   if config.current_scope then
     M.set_current(config.current_scope)
   end
+  if config.on_scope_selected then
+    on_scope_selected = config.on_scope_selected
+  end
 end
 
 ---Registers a list of scopes. If the scope with the same name already exists, it will
 ---be overwritten.
----@param scopes_to_add Scope[] a list of scope definitions 
+---@param scopes_to_add Scope[] a list of scope definitions
 M.add_all = function(scopes_to_add)
   for _, scope in ipairs(scopes_to_add) do
     M.add(scope)
@@ -218,6 +223,7 @@ M.set_current = function(scope_name)
   if scope.on_select then
     scope.on_select()
   end
+  on_scope_selected(scope)
 end
 
 ---Returns the list of directories for the current scope. If no scope is selected, throws an error.
