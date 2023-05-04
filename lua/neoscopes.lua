@@ -321,7 +321,7 @@ end
 
 ---Returns the map of all registered scopes keyed by the scope name.
 M.get_all_scopes = function()
-	return scopes
+  return scopes
 end
 
 return M
