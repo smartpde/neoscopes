@@ -236,13 +236,9 @@ M.get_current_dirs = function()
   return current_scope.dirs
 end
 
----Returns the entire, currently selected scope object. If no scope is selected, throws an error.
----@return Scope the current scope object
+---Returns the entire, currently selected scope object. If no scope is selected, returns nil.
+---@return Scope the current scope object or nil if no scope is set.
 M.get_current_scope = function()
-  if current_scope == nil then
-    error(
-      "Current scope not set, call set_current(scope_name) or select() first")
-  end
   return current_scope
 end
 
