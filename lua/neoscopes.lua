@@ -13,6 +13,7 @@ local Scope = {}
 ---@field public current_scope string the current scope to select.
 ---@field public enable_scopes_from_npm boolean whether or not to load scopes from ./package.json workspaces
 ---@field public diff_branches_for_scopes string[] list of branch names to diff for git-diff scope definitions
+---@field public diff_ancestors_for_scopes string[] list of branches to diff from git-ancestors scope definitions
 ---@field public neoscopes_config_filename string the name of the file that defines neoscopes configuration at a project-level
 ---@field public on_scope_selected - a callback function that takes a scope as an argument and is called when the scope is changed/selected
 local Config = {}
@@ -90,6 +91,43 @@ local function get_scopes_from_git_diffs(branches, name_prefix)
   return scope_list
 end
 
+local function get_scopes_from_git_diffs_from_ancestors(branches, name_prefix)
+  if name_prefix == nil then
+    name_prefix = "git_ancestor:"
+  end
+  local scope_list = {}
+  for _, to in pairs(branches) do
+    local scope = {
+      name = name_prefix .. to,
+      dirs = {},
+      files = {},
+      origin = "git"
+    }
+    local handle = io.popen("git diff --name-only " .. to .. "...")
+    local git_path_handle = io.popen("git rev-parse --show-toplevel")
+    if handle ~= nil and git_path_handle ~= nil then
+      local git_path = string.match(git_path_handle:read("*a"), "[^\r\n]+")
+      git_path_handle:close()
+      local result = handle:read("*a")
+      for line in result:gmatch("[^\r\n]+") do
+        table.insert(scope.files, git_path .. "/" .. line)
+      end
+      scope.on_select = function()
+        -- refresh a git scope every time the scope is selected so that the list of
+        -- files that differ are updated in the scope
+        local scopes_from_branch = get_scopes_from_git_diffs({to}, name_prefix)
+        for _, refreshed_scope in ipairs(scopes_from_branch) do
+          M.add(refreshed_scope)
+        end
+      end
+
+      handle:close()
+      table.insert(scope_list, scope)
+    end
+  end
+  return scope_list
+end
+
 ---@return Config - a configuration table representing the project level configuration
 local function get_project_level_config(config_filename)
   if not config_filename or stat(config_filename) == nil then
@@ -131,6 +169,16 @@ M.setup = function(config)
   if project_level_config.diff_branches_for_scopes then
     local git_scopes = get_scopes_from_git_diffs(
                          project_level_config.diff_branches_for_scopes)
+    M.add_all(git_scopes)
+  end
+  if config.diff_ancestors_for_scopes then
+    local git_scopes =
+      get_scopes_from_git_diffs_from_ancestors(config.diff_ancestors_for_scopes)
+    M.add_all(git_scopes)
+  end
+  if project_level_config.diff_ancestors_for_scopes then
+    local git_scopes = get_scopes_from_git_diffs_from_ancestors(
+                         project_level_config.diff_ancestors_for_scopes)
     M.add_all(git_scopes)
   end
   if config.add_dirs_to_all_scopes then
@@ -236,6 +284,30 @@ M.get_current_dirs = function()
   return current_scope.dirs
 end
 
+---Returns the list of paths for the current scope. If no scope is selected, throws an error.
+---scope.dirs and scope.files are merged together.
+---@return string[] the list of directories for the current scope
+M.get_current_paths = function()
+  if current_scope == nil then
+    error(
+      "Current scope not set, call set_current(scope_name) or select() first")
+  end
+
+  local mergedList = {}
+
+  -- Append elements from list1
+  for _, value in ipairs(current_scope.dirs) do
+      table.insert(mergedList, value)
+  end
+
+  -- Append elements from list2
+  for _, value in ipairs(current_scope.files) do
+      table.insert(mergedList, value)
+  end
+
+  return mergedList
+end
+
 ---Returns the entire, currently selected scope object. If no scope is selected, returns nil.
 ---@return Scope the current scope object or nil if no scope is set.
 M.get_current_scope = function()
@@ -321,3 +393,4 @@ M.get_all_scopes = function()
 end
 
 return M
+
