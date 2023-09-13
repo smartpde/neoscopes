@@ -292,20 +292,7 @@ M.get_current_paths = function()
     error(
       "Current scope not set, call set_current(scope_name) or select() first")
   end
-
-  local mergedList = {}
-
-  -- Append elements from list1
-  for _, value in ipairs(current_scope.dirs) do
-      table.insert(mergedList, value)
-  end
-
-  -- Append elements from list2
-  for _, value in ipairs(current_scope.files) do
-      table.insert(mergedList, value)
-  end
-
-  return mergedList
+  return { unpack(current_scope.dirs), unpack(current_scope.files) }
 end
 
 ---Returns the entire, currently selected scope object. If no scope is selected, returns nil.
