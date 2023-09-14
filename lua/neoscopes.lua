@@ -101,29 +101,24 @@ local function get_scopes_from_git_diffs_from_ancestors(branches, name_prefix)
       name = name_prefix .. to,
       dirs = {},
       files = {},
-      origin = "git"
+      origin = "git",
     }
-    local handle = io.popen("git diff --name-only " .. to .. "...")
-    local git_path_handle = io.popen("git rev-parse --show-toplevel")
-    if handle ~= nil and git_path_handle ~= nil then
-      local git_path = string.match(git_path_handle:read("*a"), "[^\r\n]+")
-      git_path_handle:close()
-      local result = handle:read("*a")
-      for line in result:gmatch("[^\r\n]+") do
-        table.insert(scope.files, git_path .. "/" .. line)
+    local git_path = vim.fn.systemlist("git rev-parse --show-toplevel")
+    local file_list = vim.fn.systemlist("git diff --name-only " .. to .. "...")
+    if git_path ~= nil and file_list ~= nil then
+      for _, file in ipairs(file_list) do
+        table.insert(scope.files, git_path[1] .. "/" .. file)
       end
-      scope.on_select = function()
-        -- refresh a git scope every time the scope is selected so that the list of
-        -- files that differ are updated in the scope
-        local scopes_from_branch = get_scopes_from_git_diffs_from_ancestors({to}, name_prefix)
-        for _, refreshed_scope in ipairs(scopes_from_branch) do
-          M.add(refreshed_scope)
-        end
-      end
-
-      handle:close()
-      table.insert(scope_list, scope)
     end
+    scope.on_select = function()
+      -- refresh a git scope every time the scope is selected so that the list of
+      -- files that differ are updated in the scope
+      local scopes_from_branch = get_scopes_from_git_diffs_from_ancestors({ to }, name_prefix)
+      for _, refreshed_scope in ipairs(scopes_from_branch) do
+        M.add(refreshed_scope)
+      end
+    end
+    table.insert(scope_list, scope)
   end
   return scope_list
 end
