@@ -214,9 +214,18 @@ require("neoscopes").setup({
 })
 ```
 
+### Predefined scopes from `git` differences from ancestors
+in addition, neoscopes supports defining scopes on files that differ between the current project's source-controlled files and other defined branches that are considered ancestors of the current branch. This way you can create scopes of files you were working on in the current branch after branching it from the parent (ancestor) branch. Each configured branch will result in its own scope.
+
+```lua
+require("neoscopes").setup({
+  diff_ancestors_for_scopes = {"main", "origin/main" }
+})
+```
+
 
 ## Project level configuration
-By default, neoscopes will look for a file named `neoscopes.config.json` in the current working directory. If this file exists, the following configuration keys will be respected by the setup routine `enable_scopes_from_npm`, `scopes`, `diff_branches_for_scopes`, `add_dirs_to_all_scopes`. This provides a mechanism by which to define project specific neoscope settings without cluttering your neovim configuration.
+By default, neoscopes will look for a file named `neoscopes.config.json` in the current working directory. If this file exists, the following configuration keys will be respected by the setup routine `enable_scopes_from_npm`, `scopes`, `diff_branches_for_scopes`, `diff_ancestors_for_scopes`, `add_dirs_to_all_scopes`. This provides a mechanism by which to define project specific neoscope settings without cluttering your neovim configuration.
 
 
 ## Telescope integration
@@ -245,6 +254,27 @@ vim.api.nvim_set_keymap("n", "<Leader>ff", ":lua find_files()<CR>",
   {noremap = true})
 vim.api.nvim_set_keymap("n", "<Leader>fg", ":lua live_grep()<CR>",
   {noremap = true})
+```
+
+### including current scope files in the field of view of telescope pickers
+
+Note the use of `get_current_paths` instead of `get_current_dirs` to combine scoped directories and files.
+
+```lua
+-- previous configuration settings
+
+_G.find_files = function()
+  require('telescope.builtin').find_files({
+    search_dirs = scopes.get_current_paths()
+  })
+end
+_G.live_grep = function()
+  require('telescope.builtin').live_grep({
+    search_dirs = scopes.get_current_paths()
+  })
+end
+
+-- subsequent configuration settings
 ```
 
 ## Startup scope
