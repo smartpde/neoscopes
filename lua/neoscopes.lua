@@ -287,7 +287,7 @@ M.get_current_paths = function()
     error(
       "Current scope not set, call set_current(scope_name) or select() first")
   end
-  return { unpack(current_scope.dirs), unpack(current_scope.files) }
+  return vim.tbl_flatten { current_scope.dirs, current_scope.files }
 end
 
 ---Returns the entire, currently selected scope object. If no scope is selected, returns nil.
