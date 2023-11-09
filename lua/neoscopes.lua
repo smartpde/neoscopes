@@ -38,8 +38,13 @@ local function get_scopes_from_package_json(name_prefix)
   local scope_list = {}
   if stat("package.json") ~= nil then
     local tab = vim.fn.json_decode(vim.fn.readfile("package.json"))
-    if tab.workspaces ~= nil and tab.workspaces.packages ~= nil then
-      local pkg_globs = tab.workspaces.packages
+    if tab.workspaces ~= nil then
+      local pkg_globs = nil
+      if tab.workspaces.packages ~= nil then
+        pkg_globs = tab.workspaces.packages
+      else
+        pkg_globs = tab.workspaces
+      end
       for _, pkg_glob in pairs(pkg_globs) do
         for _, filename in ipairs(vim.fn.glob(pkg_glob .. "/package.json", true,
                                     true)) do
