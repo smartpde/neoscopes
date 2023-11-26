@@ -379,5 +379,11 @@ M.get_all_scopes = function()
   return scopes
 end
 
+---Returns the current selected scope
+M.get_current_scope = function()
+	return current_scope.name or ""
+end
+
+
 return M
 
