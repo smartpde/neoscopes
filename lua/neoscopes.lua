@@ -142,7 +142,7 @@ end
 ---@param config Config the configuration object
 M.setup = function(config)
   if not config then
-    return
+    config = {}
   end
   local project_level_config_filename = config.neoscopes_config_filename or
                                           'neoscopes.config.json'
