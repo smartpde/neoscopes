@@ -166,6 +166,18 @@ scopes.add({
 })
 ```
 
+You may also configure neoscopes with a `on_scope_selected` callback that is
+invoked for all scopes:
+
+```lua
+scope = require("neoscopes").setup({
+  on_scope_selected = function(scope)
+    -- Change the current dir in neovim.
+    -- Run `git pull`, etc.
+  end
+})
+```
+
 ## Adding directories to all scopes
 
 It's often useful to add certain directories to all registered scopes, e.g. the
