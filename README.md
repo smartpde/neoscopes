@@ -26,12 +26,25 @@ extension hooks for your custom logic.
 
 ## Installation
 
+Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+
 ```lua
 -- Optionally, install telescope for nicer scope selection UI.
 use {"nvim-telescope/telescope.nvim"}
 
 -- Install neoscopes.
 use {"smartpde/neoscopes"}
+```
+
+Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+  {
+    'smartpde/neoscopes',
+    -- Optionally, install telescope for nicer scope selection UI.
+    dependencies = { 'nvim-telescope/telescope.nvim' },
+    config = true,
+  }
 ```
 
 ## Registering scopes
